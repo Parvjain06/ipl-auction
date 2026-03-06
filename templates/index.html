@@ -1,28 +1,110 @@
-<h2>IPL Players</h2>
+<!DOCTYPE html>
+<html>
 
-<form method="GET">
+<head>
+<title>IPL Auction</title>
 
-<input name="name" placeholder="Search player">
+<style>
 
-<select name="country">
+body{
+font-family:Arial;
+background:#f4f4f4;
+padding:40px;
+}
 
-<option value="">All</option>
-<option>India</option>
-<option>England</option>
+.card{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:8px;
+}
+
+button{
+padding:10px 20px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<h1>IPL Auction System</h1>
+
+<div class="card">
+
+<h2>Select Role</h2>
+
+<button onclick="showAuctioneer()">Auctioneer</button>
+<button onclick="showTeam()">Team</button>
+
+</div>
+
+
+<div id="auctioneer" style="display:none">
+
+<h2>Auctioneer Panel</h2>
+
+<h3>Select Player For Auction</h3>
+
+{% for p in players %}
+
+{% if p.sold == 0 %}
+
+<p>
+
+{{p.name}} (Base: {{p.base_price}})
+
+<a href="/start/{{p.id}}">
+<button>Start Auction</button>
+</a>
+
+</p>
+
+{% endif %}
+
+{% endfor %}
+
+</div>
+
+
+<div id="team" style="display:none">
+
+<h2>Team Panel</h2>
+
+<form method="post" action="/bid">
+
+<select name="team">
+
+{% for t in teams %}
+<option value="{{t.name}}">
+{{t.name}} (Budget: {{t.budget}})
+</option>
+{% endfor %}
 
 </select>
 
-<button>Search</button>
+<input type="number" name="bid" placeholder="Bid Amount">
+
+<button type="submit">Place Bid</button>
 
 </form>
+
+</div>
+
+
+<div class="card">
+
+<h2>Players</h2>
 
 <table border="1">
 
 <tr>
 <th>Name</th>
-<th>Country</th>
-<th>Role</th>
-<th>Action</th>
+<th>Status</th>
+<th>Sold Price</th>
+<th>Team</th>
 </tr>
 
 {% for p in players %}
@@ -30,15 +112,43 @@
 <tr>
 
 <td>{{p.name}}</td>
-<td>{{p.country}}</td>
-<td>{{p.role}}</td>
 
-<td>
-<a href="/player/{{p.id}}">View</a>
-</td>
+{% if p.sold == 1 %}
+
+<td>SOLD</td>
+<td>{{p.sold_price}}</td>
+<td>{{p.sold_team}}</td>
+
+{% else %}
+
+<td>Available</td>
+<td>-</td>
+<td>-</td>
+
+{% endif %}
 
 </tr>
 
 {% endfor %}
 
 </table>
+
+</div>
+
+
+<script>
+
+function showAuctioneer(){
+document.getElementById("auctioneer").style.display="block"
+document.getElementById("team").style.display="none"
+}
+
+function showTeam(){
+document.getElementById("team").style.display="block"
+document.getElementById("auctioneer").style.display="none"
+}
+
+</script>
+
+</body>
+</html>

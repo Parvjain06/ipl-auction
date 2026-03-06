@@ -8,36 +8,48 @@ app = Flask(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
+    DATABASE_URL = DATABASE_URL.replace("postgres://","postgresql://")
 else:
     DATABASE_URL = "sqlite:///ipl.db"
 
 engine = create_engine(DATABASE_URL)
 
 
-# -----------------------------
+# --------------------------
 # CREATE TABLES
-# -----------------------------
+# --------------------------
+
 def create_tables():
 
     with engine.connect() as conn:
 
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS players(
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY,
         name TEXT,
         country TEXT,
         role TEXT,
         matches INTEGER,
         runs INTEGER,
         wickets INTEGER,
-        base_price INTEGER
+        base_price INTEGER,
+        sold INTEGER DEFAULT 0,
+        sold_price INTEGER,
+        sold_team TEXT
+        )
+        """))
+
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS teams(
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        budget INTEGER
         )
         """))
 
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS auction(
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY,
         player_id INTEGER,
         current_price INTEGER,
         status TEXT
@@ -46,212 +58,138 @@ def create_tables():
 
         conn.commit()
 
-
 create_tables()
 
 
-# -----------------------------
-# LOAD PLAYERS FROM EXCEL
-# -----------------------------
-def load_players():
+# --------------------------
+# HOME PAGE
+# --------------------------
 
-    try:
-
-        df = pd.read_excel("players.xlsx")
-
-        with engine.connect() as conn:
-
-            result = conn.execute(text("SELECT COUNT(*) FROM players"))
-            count = result.scalar()
-
-            if count == 0:
-
-                for _, row in df.iterrows():
-
-                    conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS players(
-                    id INTEGER PRIMARY KEY,
-                    name TEXT,
-                    country TEXT,
-                    role TEXT,
-                    matches INTEGER,
-                    runs INTEGER,
-                    wickets INTEGER,
-                    base_price INTEGER
-                    )
-                    """))
-
-                    conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS auction(
-                    id INTEGER PRIMARY KEY,
-                    player_id INTEGER,
-                    current_price INTEGER,
-                    status TEXT
-                    )
-                    """))
-
-                conn.commit()
-
-    except:
-        pass
-
-
-load_players()
-
-
-# -----------------------------
-# HOME PAGE (PLAYER LIST)
-# -----------------------------
 @app.route("/")
 def index():
 
-    name = request.args.get("name")
-    country = request.args.get("country")
-    role = request.args.get("role")
-
-    query = "SELECT * FROM players WHERE 1=1"
-    params = {}
-
-    if name:
-        query += " AND LOWER(name) LIKE LOWER(:name)"
-        params["name"] = f"%{name}%"
-
-    if country:
-        query += " AND country = :country"
-        params["country"] = country
-
-    if role:
-        query += " AND role = :role"
-        params["role"] = role
-
     with engine.connect() as conn:
-        players = conn.execute(text(query), params).fetchall()
 
-    return render_template("index.html", players=players)
+        players = conn.execute(text("""
+        SELECT * FROM players
+        """)).fetchall()
+
+        teams = conn.execute(text("""
+        SELECT * FROM teams
+        """)).fetchall()
+
+        auction = conn.execute(text("""
+        SELECT * FROM auction WHERE status='OPEN'
+        """)).fetchone()
+
+    return render_template(
+        "index.html",
+        players=players,
+        teams=teams,
+        auction=auction
+    )
 
 
-# -----------------------------
-# PLAYER STATS PAGE
-# -----------------------------
-@app.route("/player/<int:pid>")
-def player(pid):
+# --------------------------
+# START AUCTION (Auctioneer)
+# --------------------------
+
+@app.route("/start/<int:pid>")
+def start(pid):
 
     with engine.connect() as conn:
 
         player = conn.execute(text("""
         SELECT * FROM players WHERE id=:id
-        """), {"id": pid}).fetchone()
-
-    return render_template("player.html", player=player)
-
-
-# -----------------------------
-# START AUCTION
-# -----------------------------
-@app.route("/auction/<int:pid>")
-def auction(pid):
-
-    with engine.connect() as conn:
-
-        player = conn.execute(text("""
-        SELECT * FROM players WHERE id=:id
-        """), {"id": pid}).fetchone()
-
-        auction = conn.execute(text("""
-        SELECT * FROM auction
-        WHERE player_id=:pid AND status='OPEN'
-        """), {"pid": pid}).fetchone()
-
-        if not auction:
-
-            conn.execute(text("""
-            INSERT INTO auction(player_id,current_price,status)
-            VALUES(:pid,:price,'OPEN')
-            """), {"pid": pid, "price": player.base_price})
-
-            conn.commit()
-
-            auction = conn.execute(text("""
-            SELECT * FROM auction
-            WHERE player_id=:pid AND status='OPEN'
-            """), {"pid": pid}).fetchone()
-
-    return render_template("auction.html", player=player, auction=auction)
-
-
-# -----------------------------
-# PLACE BID
-# -----------------------------
-@app.route("/bid/<int:pid>", methods=["POST"])
-def bid(pid):
-
-    bid = int(request.form["bid"])
-
-    with engine.connect() as conn:
-
-        auction = conn.execute(text("""
-        SELECT * FROM auction
-        WHERE player_id=:pid AND status='OPEN'
-        """), {"pid": pid}).fetchone()
-
-        if not auction:
-            return "Auction closed"
-
-        if bid <= auction.current_price:
-            return "Bid must be higher than current price"
+        """),{"id":pid}).fetchone()
 
         conn.execute(text("""
-        UPDATE auction
-        SET current_price=:price
-        WHERE id=:id
-        """), {"price": bid, "id": auction.id})
-
-        conn.commit()
-
-    return redirect(f"/auction/{pid}")
-
-
-# -----------------------------
-# CLOSE AUCTION
-# -----------------------------
-@app.route("/close/<int:pid>")
-def close(pid):
-
-    with engine.connect() as conn:
-
-        conn.execute(text("""
-        UPDATE auction
-        SET status='CLOSED'
-        WHERE player_id=:pid
-        """), {"pid": pid})
+        INSERT INTO auction(player_id,current_price,status)
+        VALUES(:pid,:price,'OPEN')
+        """),{"pid":pid,"price":player.base_price})
 
         conn.commit()
 
     return redirect("/")
 
 
-# -----------------------------
-# UPLOAD NEW PLAYER DATASET
-# -----------------------------
-@app.route("/upload", methods=["GET", "POST"])
-def upload():
+# --------------------------
+# PLACE BID (Teams)
+# --------------------------
 
-    if request.method == "POST":
+@app.route("/bid",methods=["POST"])
+def bid():
 
-        file = request.files["file"]
+    team = request.form["team"]
+    bid = int(request.form["bid"])
 
-        df = pd.read_excel(file)
+    with engine.connect() as conn:
 
-        df.to_sql("players", engine, if_exists="append", index=False)
+        auction = conn.execute(text("""
+        SELECT * FROM auction WHERE status='OPEN'
+        """)).fetchone()
 
-        return "Dataset uploaded successfully"
+        if bid <= auction.current_price:
+            return "Bid must be higher"
 
-    return render_template("upload.html")
+        conn.execute(text("""
+        UPDATE auction
+        SET current_price=:price
+        WHERE id=:id
+        """),{"price":bid,"id":auction.id})
+
+        conn.commit()
+
+    return redirect("/")
 
 
-# -----------------------------
-# RUN APP
-# -----------------------------
+# --------------------------
+# CLOSE AUCTION
+# --------------------------
+
+@app.route("/close",methods=["POST"])
+def close():
+
+    team = request.form["team"]
+
+    with engine.connect() as conn:
+
+        auction = conn.execute(text("""
+        SELECT * FROM auction WHERE status='OPEN'
+        """)).fetchone()
+
+        conn.execute(text("""
+        UPDATE players
+        SET sold=1,
+        sold_price=:price,
+        sold_team=:team
+        WHERE id=:pid
+        """),{
+        "price":auction.current_price,
+        "team":team,
+        "pid":auction.player_id
+        })
+
+        conn.execute(text("""
+        UPDATE teams
+        SET budget = budget - :price
+        WHERE name=:team
+        """),{
+        "price":auction.current_price,
+        "team":team
+        })
+
+        conn.execute(text("""
+        UPDATE auction
+        SET status='CLOSED'
+        """))
+
+        conn.commit()
+
+    return redirect("/")
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+
+    port = int(os.environ.get("PORT",10000))
+    app.run(host="0.0.0.0",port=port)
