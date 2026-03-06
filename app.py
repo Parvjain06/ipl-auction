@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session
 from sqlalchemy import create_engine, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 import random
 import threading
+import sys
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "ipl-auction-secret-key-2026")
@@ -16,7 +17,7 @@ if DATABASE_URL:
 else:
     DATABASE_URL = "sqlite:///ipl.db"
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 is_sqlite = DATABASE_URL.startswith("sqlite")
 
@@ -34,6 +35,10 @@ STAT_COLS = [
     ("fifties", "INTEGER"),
     ("catches", "INTEGER"),
 ]
+
+
+def log(msg):
+    print(msg, flush=True)
 
 
 # --------------------------
@@ -75,12 +80,11 @@ def create_tables():
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS users(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password_hash TEXT,
-            role TEXT
+            username TEXT UNIQUE, password_hash TEXT, role TEXT
             )
             """))
         else:
+            # Players
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS players(
             id SERIAL PRIMARY KEY,
@@ -94,31 +98,40 @@ def create_tables():
             """))
             for col, coltype in STAT_COLS:
                 pg_type = coltype.replace("REAL", "DOUBLE PRECISION")
-                conn.execute(text(f"ALTER TABLE players ADD COLUMN IF NOT EXISTS {col} {pg_type}"))
+                try:
+                    conn.execute(text(f"ALTER TABLE players ADD COLUMN IF NOT EXISTS {col} {pg_type}"))
+                except Exception:
+                    pass
 
-            conn.execute(text("DROP TABLE IF EXISTS teams"))
+            # Teams — CREATE IF NOT EXISTS (don't drop!)
             conn.execute(text("""
-            CREATE TABLE teams(
+            CREATE TABLE IF NOT EXISTS teams(
             id SERIAL PRIMARY KEY,
             name TEXT, budget INTEGER
             )
             """))
-            conn.execute(text("DROP TABLE IF EXISTS auction"))
+
+            # Auction — CREATE IF NOT EXISTS, add missing columns
             conn.execute(text("""
-            CREATE TABLE auction(
+            CREATE TABLE IF NOT EXISTS auction(
             id SERIAL PRIMARY KEY,
             player_id INTEGER, current_price INTEGER,
             highest_bidder TEXT, status TEXT
             )
             """))
+            try:
+                conn.execute(text("ALTER TABLE auction ADD COLUMN IF NOT EXISTS highest_bidder TEXT"))
+            except Exception:
+                pass
+
+            # Users
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS users(
             id SERIAL PRIMARY KEY,
-            username TEXT UNIQUE,
-            password_hash TEXT,
-            role TEXT
+            username TEXT UNIQUE, password_hash TEXT, role TEXT
             )
             """))
+
         conn.commit()
 
 
@@ -143,7 +156,6 @@ def generate_player_stats():
             role = p.role or "Batsman"
             matches = p.matches or 50
             runs = p.runs or 0
-            wickets = p.wickets or 0
 
             innings = max(1, int(matches * 0.9))
             batting_avg = round(runs / innings, 2) if runs > 0 else round(random.uniform(5, 15), 2)
@@ -197,19 +209,20 @@ _initialized = False
 def run_initialization():
     global _initialized
     try:
+        log("⏳ Starting initialization...")
         create_tables()
-        print("✅ Tables created", flush=True)
+        log("✅ Tables created")
         seed_teams()
-        print("✅ Teams seeded", flush=True)
+        log("✅ Teams seeded")
         generate_player_stats()
-        print("✅ Player stats generated", flush=True)
-        _initialized = True
-        print("✅ Initialization complete!", flush=True)
+        log("✅ Player stats generated")
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"❌ Startup error: {e}", flush=True)
+        log(f"❌ Startup error: {e}")
+    finally:
         _initialized = True
+        log("✅ Initialization complete!")
 
 init_thread = threading.Thread(target=run_initialization, daemon=True)
 init_thread.start()
@@ -218,7 +231,9 @@ init_thread.start()
 @app.before_request
 def wait_for_init():
     if not _initialized:
-        init_thread.join(timeout=60)
+        log(f"⏳ Request waiting for init: {request.path}")
+        init_thread.join(timeout=120)
+        log(f"✅ Init done, serving: {request.path}")
 
 
 # --------------------------
@@ -284,6 +299,7 @@ def signup():
 
     session["user"] = username
     session["role"] = role
+    log(f"✅ Signup: {username} ({role})")
 
     if role == "auctioneer":
         return redirect("/auctioneer")
@@ -302,6 +318,7 @@ def login():
 
     username = request.form["username"].strip()
     password = request.form["password"]
+    log(f"🔑 Login attempt: {username}")
 
     with engine.connect() as conn:
         user = conn.execute(
@@ -309,10 +326,12 @@ def login():
         ).fetchone()
 
     if not user or not check_password_hash(user.password_hash, password):
+        log(f"❌ Login failed: {username}")
         return render_template("login.html", teams=DEFAULT_TEAMS, error="Invalid username or password")
 
     session["user"] = user.username
     session["role"] = user.role
+    log(f"✅ Login success: {username} ({user.role})")
 
     if user.role == "auctioneer":
         return redirect("/auctioneer")
