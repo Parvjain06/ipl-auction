@@ -108,9 +108,15 @@ def randomize_base_prices():
         conn.commit()
 
 
-create_tables()
-seed_teams()
-randomize_base_prices()
+try:
+    create_tables()
+    print("✅ Tables created")
+    seed_teams()
+    print("✅ Teams seeded")
+    randomize_base_prices()
+    print("✅ Base prices randomized")
+except Exception as e:
+    print(f"❌ Startup error: {e}")
 
 
 # --------------------------
