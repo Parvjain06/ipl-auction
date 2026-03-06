@@ -357,8 +357,21 @@ def logout():
 @login_required(role="auctioneer")
 def auctioneer():
     with engine.connect() as conn:
-        players = conn.execute(text("SELECT * FROM players")).fetchall()
+        players = conn.execute(text("SELECT * FROM players ORDER BY id")).fetchall()
         teams = conn.execute(text("SELECT * FROM teams")).fetchall()
+        
+        # Calculate dynamic budgets
+        spent_data = conn.execute(
+            text("SELECT sold_team, COALESCE(SUM(sold_price), 0) FROM players WHERE sold=1 GROUP BY sold_team")
+        ).fetchall()
+        spent_dict = {row[0]: row[1] for row in spent_data}
+        
+        teams_with_budget = []
+        for t in teams:
+            t_dict = dict(t._mapping)
+            t_dict["budget"] = TEAM_BUDGET - spent_dict.get(t.name, 0)
+            teams_with_budget.append(t_dict)
+
         auction = conn.execute(
             text("SELECT * FROM auction WHERE status='OPEN'")
         ).fetchone()
@@ -373,7 +386,7 @@ def auctioneer():
     return render_template(
         "auctioneer.html",
         players=players,
-        teams=teams,
+        teams=teams_with_budget,
         auction=auction,
         auction_player=auction_player,
     )
@@ -390,11 +403,19 @@ def team_page(name):
         return redirect(f"/team/{session.get('user')}")
 
     with engine.connect() as conn:
-        team = conn.execute(
+        team_row = conn.execute(
             text("SELECT * FROM teams WHERE name=:n"), {"n": name}
         ).fetchone()
-        if not team:
+        if not team_row:
             return redirect("/")
+
+        spent = conn.execute(
+            text("SELECT COALESCE(SUM(sold_price), 0) FROM players WHERE sold=1 AND sold_team=:t"),
+            {"t": name}
+        ).scalar()
+        
+        team_dict = dict(team_row._mapping)
+        team_dict["budget"] = TEAM_BUDGET - spent
 
         auction = conn.execute(
             text("SELECT * FROM auction WHERE status='OPEN'")
@@ -414,7 +435,7 @@ def team_page(name):
 
     return render_template(
         "team.html",
-        team=team,
+        team=team_dict,
         auction=auction,
         auction_player=auction_player,
         my_players=my_players,
@@ -474,7 +495,14 @@ def bid():
         team_row = conn.execute(
             text("SELECT * FROM teams WHERE name=:n"), {"n": team_name}
         ).fetchone()
-        if not team_row or bid_amount > team_row.budget:
+        
+        spent = conn.execute(
+            text("SELECT COALESCE(SUM(sold_price), 0) FROM players WHERE sold=1 AND sold_team=:t"),
+            {"t": team_name}
+        ).scalar()
+        current_budget = TEAM_BUDGET - spent
+
+        if not team_row or bid_amount > current_budget:
             return redirect(f"/team/{team_name}")
 
         conn.execute(
@@ -511,10 +539,6 @@ def close():
         conn.execute(
             text("UPDATE players SET sold=1, sold_price=:price, sold_team=:team WHERE id=:pid"),
             {"price": auction.current_price, "team": auction.highest_bidder, "pid": auction.player_id},
-        )
-        conn.execute(
-            text("UPDATE teams SET budget=budget-:price WHERE name=:team"),
-            {"price": auction.current_price, "team": auction.highest_bidder},
         )
         conn.execute(
             text("UPDATE auction SET status='CLOSED' WHERE id=:id"),
