@@ -39,6 +39,12 @@ def create_tables():
             sold_team TEXT
             )
             """))
+            # Add missing columns to existing table (SQLite has no IF NOT EXISTS for columns)
+            for col, coltype in [("sold", "INTEGER DEFAULT 0"), ("sold_price", "INTEGER"), ("sold_team", "TEXT")]:
+                try:
+                    conn.execute(text(f"ALTER TABLE players ADD COLUMN {col} {coltype}"))
+                except Exception:
+                    pass  # column already exists
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS teams(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +70,11 @@ def create_tables():
             sold_team TEXT
             )
             """))
+            # Add missing columns to existing table
+            conn.execute(text("ALTER TABLE players ADD COLUMN IF NOT EXISTS sold INTEGER DEFAULT 0"))
+            conn.execute(text("ALTER TABLE players ADD COLUMN IF NOT EXISTS sold_price INTEGER"))
+            conn.execute(text("ALTER TABLE players ADD COLUMN IF NOT EXISTS sold_team TEXT"))
+
             conn.execute(text("DROP TABLE IF EXISTS teams"))
             conn.execute(text("""
             CREATE TABLE teams(
