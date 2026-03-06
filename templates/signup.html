@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Sign Up — IPL Auction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            width: 420px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #ffd200;
+        }
+
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+
+        .back {
+            display: block;
+            margin-bottom: 20px;
+            color: #aaa;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        .back:hover {
+            color: #fff;
+        }
+
+        .error {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input::placeholder {
+            color: #666;
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .role-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.04);
+            color: #aaa;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all .2s;
+        }
+
+        .role-btn:hover {
+            border-color: #ffd200;
+            color: #fff;
+        }
+
+        .role-btn.active {
+            border-color: #ffd200;
+            color: #ffd200;
+            background: rgba(255, 210, 0, 0.08);
+        }
+
+        .team-select {
+            display: none;
+            margin-bottom: 18px;
+        }
+
+        .team-select.show {
+            display: block;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #000;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.9;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .login-link a {
+            color: #ffd200;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <a href="/" class="back">← Back to Home</a>
+        <h1>Sign Up</h1>
+        <p class="subtitle">Create your account to join the auction</p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/signup">
+
+            <label>Choose Role</label>
+            <div class="role-select">
+                <div class="role-btn active" onclick="selectRole('auctioneer', this)" id="btn-auctioneer">🎙️ Auctioneer
+                </div>
+                <div class="role-btn" onclick="selectRole('team', this)" id="btn-team">🏆 Team</div>
+            </div>
+            <input type="hidden" name="role" id="role-input" value="auctioneer">
+
+            <div class="team-select" id="team-select">
+                <div class="field">
+                    <label>Select Team</label>
+                    <select name="team">
+                        {% for t in teams %}
+                        <option value="{{ t }}">{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Set a password" required>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <p class="login-link">Already registered? <a href="/login">Login here</a></p>
+    </div>
+
+    <script>
+        function selectRole(role, el) {
+            document.getElementById('role-input').value = role;
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('team-select').classList.toggle('show', role === 'team');
+        }
+    </script>
+</body>
+
+</html>

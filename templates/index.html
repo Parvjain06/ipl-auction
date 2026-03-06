@@ -29,6 +29,7 @@
             margin-bottom: 10px;
             background: linear-gradient(90deg, #f7971e, #ffd200);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -38,44 +39,49 @@
             margin-bottom: 50px;
         }
 
-        .roles {
+        .actions {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
         }
 
-        .role-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 40px 50px;
-            cursor: pointer;
+        .btn {
+            display: inline-block;
+            padding: 14px 40px;
+            border-radius: 10px;
             text-decoration: none;
-            color: #fff;
-            transition: all .3s ease;
-        }
-
-        .role-card:hover {
-            background: rgba(255, 255, 255, 0.12);
-            transform: translateY(-4px);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .role-card .icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .role-card .label {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 600;
+            transition: all .3s;
+            border: none;
+            cursor: pointer;
         }
 
-        .role-card .desc {
-            font-size: 0.85rem;
+        .btn-login {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #000;
+        }
+
+        .btn-signup {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            opacity: 0.9;
+        }
+
+        .logged-in {
+            margin-top: 20px;
+            font-size: 0.95rem;
             color: #aaa;
-            margin-top: 8px;
+        }
+
+        .logged-in a {
+            color: #ffd200;
         }
     </style>
 </head>
@@ -83,19 +89,23 @@
 <body>
     <div class="container">
         <h1>🏏 IPL Auction</h1>
-        <p class="subtitle">Select your role to enter</p>
-        <div class="roles">
-            <a href="/auctioneer" class="role-card">
-                <div class="icon">🎙️</div>
-                <div class="label">Auctioneer</div>
-                <div class="desc">Start auctions & confirm bids</div>
-            </a>
-            <a href="/select_team" class="role-card">
-                <div class="icon">🏆</div>
-                <div class="label">Team</div>
-                <div class="desc">Place bids & build your squad</div>
-            </a>
+        <p class="subtitle">The ultimate cricket auction experience</p>
+
+        {% if session.get('user') %}
+        <div class="actions">
+            {% if session.get('role') == 'auctioneer' %}
+            <a href="/auctioneer" class="btn btn-login">Enter Auctioneer Panel</a>
+            {% else %}
+            <a href="/team/{{ session.get('user') }}" class="btn btn-login">Enter {{ session.get('user') }} Panel</a>
+            {% endif %}
         </div>
+        <p class="logged-in">Logged in as <strong>{{ session.get('user') }}</strong> · <a href="/logout">Logout</a></p>
+        {% else %}
+        <div class="actions">
+            <a href="/login" class="btn btn-login">Login</a>
+            <a href="/signup" class="btn btn-signup">Sign Up</a>
+        </div>
+        {% endif %}
     </div>
 </body>
 

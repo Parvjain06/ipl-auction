@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session, flash
 from sqlalchemy import create_engine, text
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 import os
 import random
 import threading
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "ipl-auction-secret-key-2026")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -69,6 +72,14 @@ def create_tables():
             highest_bidder TEXT, status TEXT
             )
             """))
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS users(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password_hash TEXT,
+            role TEXT
+            )
+            """))
         else:
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS players(
@@ -100,6 +111,14 @@ def create_tables():
             highest_bidder TEXT, status TEXT
             )
             """))
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS users(
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE,
+            password_hash TEXT,
+            role TEXT
+            )
+            """))
         conn.commit()
 
 
@@ -118,7 +137,6 @@ def seed_teams():
 
 
 def generate_player_stats():
-    """Generate realistic random stats and base prices for all players."""
     with engine.connect() as conn:
         players = conn.execute(text("SELECT id, role, matches, runs, wickets FROM players")).fetchall()
         for p in players:
@@ -127,22 +145,19 @@ def generate_player_stats():
             runs = p.runs or 0
             wickets = p.wickets or 0
 
-            # Calculate batting average
             innings = max(1, int(matches * 0.9))
             batting_avg = round(runs / innings, 2) if runs > 0 else round(random.uniform(5, 15), 2)
 
-            # Strike rate based on role
             if role == "Bowler":
                 strike_rate = round(random.uniform(90, 120), 2)
                 economy = round(random.uniform(5.5, 8.5), 2)
             elif role == "Allrounder":
                 strike_rate = round(random.uniform(120, 155), 2)
                 economy = round(random.uniform(6.5, 9.0), 2)
-            else:  # Batsman
+            else:
                 strike_rate = round(random.uniform(125, 170), 2)
                 economy = 0.0
 
-            # Centuries & fifties based on runs
             if runs > 5000:
                 centuries = random.randint(5, 15)
                 fifties = random.randint(20, 50)
@@ -172,6 +187,10 @@ def generate_player_stats():
             })
         conn.commit()
 
+
+# --------------------------
+# BACKGROUND INIT
+# --------------------------
 
 _initialized = False
 
@@ -203,12 +222,112 @@ def wait_for_init():
 
 
 # --------------------------
-# HOME — Role Selection
+# AUTH HELPERS
+# --------------------------
+
+def login_required(role=None):
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if "user" not in session:
+                return redirect("/login")
+            if role and session.get("role") != role:
+                return redirect("/")
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+# --------------------------
+# HOME
 # --------------------------
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", session=session)
+
+
+# --------------------------
+# SIGNUP
+# --------------------------
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        return render_template("signup.html", teams=DEFAULT_TEAMS)
+
+    role = request.form["role"]
+    password = request.form["password"]
+
+    if role == "auctioneer":
+        username = "auctioneer"
+    else:
+        username = request.form.get("team", "").strip()
+        if username not in DEFAULT_TEAMS:
+            return render_template("signup.html", teams=DEFAULT_TEAMS, error="Invalid team")
+
+    if not password or len(password) < 3:
+        return render_template("signup.html", teams=DEFAULT_TEAMS, error="Password must be at least 3 characters")
+
+    with engine.connect() as conn:
+        existing = conn.execute(
+            text("SELECT * FROM users WHERE username=:u"), {"u": username}
+        ).fetchone()
+        if existing:
+            return render_template("signup.html", teams=DEFAULT_TEAMS, error=f"'{username}' is already registered. Please login.")
+
+        conn.execute(text("""
+        INSERT INTO users(username, password_hash, role)
+        VALUES(:u, :p, :r)
+        """), {"u": username, "p": generate_password_hash(password), "r": role})
+        conn.commit()
+
+    session["user"] = username
+    session["role"] = role
+
+    if role == "auctioneer":
+        return redirect("/auctioneer")
+    else:
+        return redirect(f"/team/{username}")
+
+
+# --------------------------
+# LOGIN
+# --------------------------
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template("login.html", teams=DEFAULT_TEAMS)
+
+    username = request.form["username"].strip()
+    password = request.form["password"]
+
+    with engine.connect() as conn:
+        user = conn.execute(
+            text("SELECT * FROM users WHERE username=:u"), {"u": username}
+        ).fetchone()
+
+    if not user or not check_password_hash(user.password_hash, password):
+        return render_template("login.html", teams=DEFAULT_TEAMS, error="Invalid username or password")
+
+    session["user"] = user.username
+    session["role"] = user.role
+
+    if user.role == "auctioneer":
+        return redirect("/auctioneer")
+    else:
+        return redirect(f"/team/{user.username}")
+
+
+# --------------------------
+# LOGOUT
+# --------------------------
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 
 # --------------------------
@@ -216,6 +335,7 @@ def index():
 # --------------------------
 
 @app.route("/auctioneer")
+@login_required(role="auctioneer")
 def auctioneer():
     with engine.connect() as conn:
         players = conn.execute(text("SELECT * FROM players")).fetchall()
@@ -241,28 +361,21 @@ def auctioneer():
 
 
 # --------------------------
-# TEAM SELECTION PAGE
-# --------------------------
-
-@app.route("/select_team")
-def select_team():
-    with engine.connect() as conn:
-        teams = conn.execute(text("SELECT * FROM teams")).fetchall()
-    return render_template("select_team.html", teams=teams)
-
-
-# --------------------------
 # TEAM BIDDING PAGE
 # --------------------------
 
 @app.route("/team/<name>")
+@login_required(role="team")
 def team_page(name):
+    if session.get("user") != name:
+        return redirect(f"/team/{session.get('user')}")
+
     with engine.connect() as conn:
         team = conn.execute(
             text("SELECT * FROM teams WHERE name=:n"), {"n": name}
         ).fetchone()
         if not team:
-            return redirect("/select_team")
+            return redirect("/")
 
         auction = conn.execute(
             text("SELECT * FROM auction WHERE status='OPEN'")
@@ -294,6 +407,7 @@ def team_page(name):
 # --------------------------
 
 @app.route("/start/<int:pid>")
+@login_required(role="auctioneer")
 def start(pid):
     with engine.connect() as conn:
         open_auction = conn.execute(
@@ -323,8 +437,9 @@ def start(pid):
 # --------------------------
 
 @app.route("/bid", methods=["POST"])
+@login_required(role="team")
 def bid():
-    team_name = request.form["team"]
+    team_name = session.get("user")
     bid_amount = int(request.form["bid"])
 
     with engine.connect() as conn:
@@ -353,10 +468,11 @@ def bid():
 
 
 # --------------------------
-# CLOSE AUCTION — Sell (Auctioneer)
+# CLOSE AUCTION (Auctioneer)
 # --------------------------
 
 @app.route("/close", methods=["POST"])
+@login_required(role="auctioneer")
 def close():
     with engine.connect() as conn:
         auction = conn.execute(
@@ -395,6 +511,7 @@ def close():
 # --------------------------
 
 @app.route("/unsold", methods=["POST"])
+@login_required(role="auctioneer")
 def unsold():
     with engine.connect() as conn:
         auction = conn.execute(
