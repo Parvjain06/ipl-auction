@@ -14,6 +14,9 @@ else:
 
 engine = create_engine(DATABASE_URL)
 
+# Helper to detect DB type
+is_sqlite = DATABASE_URL.startswith("sqlite")
+
 
 # --------------------------
 # CREATE TABLES
@@ -23,38 +26,74 @@ def create_tables():
 
     with engine.connect() as conn:
 
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS players(
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        country TEXT,
-        role TEXT,
-        matches INTEGER,
-        runs INTEGER,
-        wickets INTEGER,
-        base_price INTEGER,
-        sold INTEGER DEFAULT 0,
-        sold_price INTEGER,
-        sold_team TEXT
-        )
-        """))
+        if is_sqlite:
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS players(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            country TEXT,
+            role TEXT,
+            matches INTEGER,
+            runs INTEGER,
+            wickets INTEGER,
+            base_price INTEGER,
+            sold INTEGER DEFAULT 0,
+            sold_price INTEGER,
+            sold_team TEXT
+            )
+            """))
 
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS teams(
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        budget INTEGER
-        )
-        """))
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS teams(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            budget INTEGER
+            )
+            """))
 
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS auction(
-        id INTEGER PRIMARY KEY,
-        player_id INTEGER,
-        current_price INTEGER,
-        status TEXT
-        )
-        """))
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS auction(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER,
+            current_price INTEGER,
+            highest_bidder TEXT,
+            status TEXT
+            )
+            """))
+        else:
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS players(
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            country TEXT,
+            role TEXT,
+            matches INTEGER,
+            runs INTEGER,
+            wickets INTEGER,
+            base_price INTEGER,
+            sold INTEGER DEFAULT 0,
+            sold_price INTEGER,
+            sold_team TEXT
+            )
+            """))
+
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS teams(
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            budget INTEGER
+            )
+            """))
+
+            conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS auction(
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER,
+            current_price INTEGER,
+            highest_bidder TEXT,
+            status TEXT
+            )
+            """))
 
         conn.commit()
 
@@ -82,12 +121,52 @@ def index():
         SELECT * FROM auction WHERE status='OPEN'
         """)).fetchone()
 
+        # Get player name for current auction
+        auction_player = None
+        if auction:
+            auction_player = conn.execute(text("""
+            SELECT * FROM players WHERE id=:id
+            """),{"id":auction.player_id}).fetchone()
+
     return render_template(
         "index.html",
         players=players,
         teams=teams,
-        auction=auction
+        auction=auction,
+        auction_player=auction_player
     )
+
+
+# --------------------------
+# ADD TEAM
+# --------------------------
+
+@app.route("/add_team", methods=["POST"])
+def add_team():
+
+    name = request.form["name"].strip()
+    budget = int(request.form["budget"])
+
+    if not name or budget <= 0:
+        return redirect("/")
+
+    with engine.connect() as conn:
+
+        # Check if team already exists
+        existing = conn.execute(text("""
+        SELECT * FROM teams WHERE name=:name
+        """),{"name":name}).fetchone()
+
+        if existing:
+            return redirect("/")
+
+        conn.execute(text("""
+        INSERT INTO teams(name, budget) VALUES(:name, :budget)
+        """),{"name":name, "budget":budget})
+
+        conn.commit()
+
+    return redirect("/")
 
 
 # --------------------------
@@ -99,14 +178,25 @@ def start(pid):
 
     with engine.connect() as conn:
 
+        # Check if there's already an open auction
+        open_auction = conn.execute(text("""
+        SELECT * FROM auction WHERE status='OPEN'
+        """)).fetchone()
+
+        if open_auction:
+            return redirect("/")
+
         player = conn.execute(text("""
         SELECT * FROM players WHERE id=:id
         """),{"id":pid}).fetchone()
 
+        if not player or player.sold == 1:
+            return redirect("/")
+
         conn.execute(text("""
-        INSERT INTO auction(player_id,current_price,status)
-        VALUES(:pid,:price,'OPEN')
-        """),{"pid":pid,"price":player.base_price})
+        INSERT INTO auction(player_id, current_price, highest_bidder, status)
+        VALUES(:pid, :price, NULL, 'OPEN')
+        """),{"pid":pid, "price":player.base_price})
 
         conn.commit()
 
@@ -117,11 +207,11 @@ def start(pid):
 # PLACE BID (Teams)
 # --------------------------
 
-@app.route("/bid",methods=["POST"])
+@app.route("/bid", methods=["POST"])
 def bid():
 
     team = request.form["team"]
-    bid = int(request.form["bid"])
+    bid_amount = int(request.form["bid"])
 
     with engine.connect() as conn:
 
@@ -129,14 +219,25 @@ def bid():
         SELECT * FROM auction WHERE status='OPEN'
         """)).fetchone()
 
-        if bid <= auction.current_price:
-            return "Bid must be higher"
+        if not auction:
+            return redirect("/")
+
+        if bid_amount <= auction.current_price:
+            return redirect("/")
+
+        # Check team budget
+        team_row = conn.execute(text("""
+        SELECT * FROM teams WHERE name=:name
+        """),{"name":team}).fetchone()
+
+        if not team_row or bid_amount > team_row.budget:
+            return redirect("/")
 
         conn.execute(text("""
         UPDATE auction
-        SET current_price=:price
+        SET current_price=:price, highest_bidder=:team
         WHERE id=:id
-        """),{"price":bid,"id":auction.id})
+        """),{"price":bid_amount, "team":team, "id":auction.id})
 
         conn.commit()
 
@@ -144,13 +245,11 @@ def bid():
 
 
 # --------------------------
-# CLOSE AUCTION
+# CLOSE AUCTION (Sell to highest bidder)
 # --------------------------
 
-@app.route("/close",methods=["POST"])
+@app.route("/close", methods=["POST"])
 def close():
-
-    team = request.form["team"]
 
     with engine.connect() as conn:
 
@@ -158,6 +257,18 @@ def close():
         SELECT * FROM auction WHERE status='OPEN'
         """)).fetchone()
 
+        if not auction:
+            return redirect("/")
+
+        if not auction.highest_bidder:
+            # No one bid — mark as unsold
+            conn.execute(text("""
+            UPDATE auction SET status='UNSOLD' WHERE id=:id
+            """),{"id":auction.id})
+            conn.commit()
+            return redirect("/")
+
+        # Sell to the highest bidder
         conn.execute(text("""
         UPDATE players
         SET sold=1,
@@ -166,7 +277,7 @@ def close():
         WHERE id=:pid
         """),{
         "price":auction.current_price,
-        "team":team,
+        "team":auction.highest_bidder,
         "pid":auction.player_id
         })
 
@@ -176,13 +287,39 @@ def close():
         WHERE name=:team
         """),{
         "price":auction.current_price,
-        "team":team
+        "team":auction.highest_bidder
         })
 
         conn.execute(text("""
         UPDATE auction
         SET status='CLOSED'
-        """))
+        WHERE id=:id
+        """),{"id":auction.id})
+
+        conn.commit()
+
+    return redirect("/")
+
+
+# --------------------------
+# MARK UNSOLD
+# --------------------------
+
+@app.route("/unsold", methods=["POST"])
+def unsold():
+
+    with engine.connect() as conn:
+
+        auction = conn.execute(text("""
+        SELECT * FROM auction WHERE status='OPEN'
+        """)).fetchone()
+
+        if not auction:
+            return redirect("/")
+
+        conn.execute(text("""
+        UPDATE auction SET status='UNSOLD' WHERE id=:id
+        """),{"id":auction.id})
 
         conn.commit()
 
@@ -192,4 +329,4 @@ def close():
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT",10000))
-    app.run(host="0.0.0.0",port=port)
+    app.run(host="0.0.0.0", port=port)

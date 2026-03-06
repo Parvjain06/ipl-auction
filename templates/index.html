@@ -21,6 +21,36 @@ border-radius:8px;
 
 button{
 padding:10px 20px;
+cursor:pointer;
+}
+
+table{
+border-collapse:collapse;
+width:100%;
+}
+
+th, td{
+padding:8px 12px;
+text-align:left;
+border:1px solid #ddd;
+}
+
+th{
+background:#333;
+color:white;
+}
+
+.live-auction{
+background:#fff3cd;
+padding:20px;
+border-radius:8px;
+margin-bottom:20px;
+border:2px solid #ffc107;
+}
+
+input, select{
+padding:8px;
+margin:4px;
 }
 
 </style>
@@ -42,9 +72,35 @@ padding:10px 20px;
 </div>
 
 
+{% if auction and auction_player %}
+
+<div class="live-auction">
+
+<h2>🔴 Live Auction</h2>
+
+<p><strong>Player:</strong> {{auction_player.name}} ({{auction_player.role}} - {{auction_player.country}})</p>
+<p><strong>Base Price:</strong> {{auction_player.base_price}}</p>
+<p><strong>Current Price:</strong> {{auction.current_price}}</p>
+<p><strong>Highest Bidder:</strong> {{auction.highest_bidder or "No bids yet"}}</p>
+
+</div>
+
+{% endif %}
+
+
 <div id="auctioneer" style="display:none">
 
+<div class="card">
+
 <h2>Auctioneer Panel</h2>
+
+<h3>Add Team</h3>
+
+<form method="post" action="/add_team">
+<input type="text" name="name" placeholder="Team Name" required>
+<input type="number" name="budget" placeholder="Budget" required>
+<button type="submit">Add Team</button>
+</form>
 
 <h3>Select Player For Auction</h3>
 
@@ -54,7 +110,7 @@ padding:10px 20px;
 
 <p>
 
-{{p.name}} (Base: {{p.base_price}})
+{{p.name}} | {{p.role}} | Base: {{p.base_price}}
 
 <a href="/start/{{p.id}}">
 <button>Start Auction</button>
@@ -66,12 +122,33 @@ padding:10px 20px;
 
 {% endfor %}
 
+
+{% if auction %}
+
+<h3>Close Current Auction</h3>
+
+<form method="post" action="/close">
+<button type="submit">Sell to Highest Bidder</button>
+</form>
+
+<form method="post" action="/unsold" style="margin-top:8px;">
+<button type="submit">Mark Unsold</button>
+</form>
+
+{% endif %}
+
+</div>
+
 </div>
 
 
 <div id="team" style="display:none">
 
+<div class="card">
+
 <h2>Team Panel</h2>
+
+{% if auction %}
 
 <form method="post" action="/bid">
 
@@ -85,11 +162,42 @@ padding:10px 20px;
 
 </select>
 
-<input type="number" name="bid" placeholder="Bid Amount">
+<input type="number" name="bid" placeholder="Bid Amount" required>
 
 <button type="submit">Place Bid</button>
 
 </form>
+
+{% else %}
+
+<p>No active auction right now.</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>Teams</h2>
+
+<table>
+
+<tr>
+<th>Name</th>
+<th>Budget</th>
+</tr>
+
+{% for t in teams %}
+<tr>
+<td>{{t.name}}</td>
+<td>{{t.budget}}</td>
+</tr>
+{% endfor %}
+
+</table>
 
 </div>
 
@@ -98,10 +206,12 @@ padding:10px 20px;
 
 <h2>Players</h2>
 
-<table border="1">
+<table>
 
 <tr>
 <th>Name</th>
+<th>Role</th>
+<th>Country</th>
 <th>Status</th>
 <th>Sold Price</th>
 <th>Team</th>
@@ -112,6 +222,8 @@ padding:10px 20px;
 <tr>
 
 <td>{{p.name}}</td>
+<td>{{p.role}}</td>
+<td>{{p.country}}</td>
 
 {% if p.sold == 1 %}
 
