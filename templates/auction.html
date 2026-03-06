@@ -1,0 +1,17 @@
+<h2>Auction: {{player.name}}</h2>
+
+<p>Current Price: {{auction.current_price}}</p>
+
+<form method="POST" action="/bid/{{player.id}}">
+
+<input type="number" name="bid">
+
+<button>Place Bid</button>
+
+</form>
+
+<br>
+
+<a href="/close/{{player.id}}">
+<button>Close Auction</button>
+</a>

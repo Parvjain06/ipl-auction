@@ -1,0 +1,44 @@
+<h2>IPL Players</h2>
+
+<form method="GET">
+
+<input name="name" placeholder="Search player">
+
+<select name="country">
+
+<option value="">All</option>
+<option>India</option>
+<option>England</option>
+
+</select>
+
+<button>Search</button>
+
+</form>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>Country</th>
+<th>Role</th>
+<th>Action</th>
+</tr>
+
+{% for p in players %}
+
+<tr>
+
+<td>{{p.name}}</td>
+<td>{{p.country}}</td>
+<td>{{p.role}}</td>
+
+<td>
+<a href="/player/{{p.id}}">View</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
