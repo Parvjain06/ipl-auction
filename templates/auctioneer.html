@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Auctioneer — IPL Auction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f0c29;
+            color: #fff;
+            padding: 30px 40px;
+        }
+
+        a {
+            color: #ffd200;
+            text-decoration: none;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .back {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .back:hover {
+            color: #fff;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            color: #ffd200;
+        }
+
+        /* Live Auction */
+        .live {
+            border-color: #ff4757;
+            background: rgba(255, 71, 87, 0.08);
+        }
+
+        .live h2 {
+            color: #ff4757;
+        }
+
+        .live-info {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .live-info div {
+            font-size: 0.95rem;
+        }
+
+        .live-info strong {
+            color: #fff;
+        }
+
+        .live-info span {
+            color: #aaa;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button,
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all .2s;
+        }
+
+        .btn-green {
+            background: #2ed573;
+            color: #000;
+        }
+
+        .btn-green:hover {
+            background: #26c064;
+        }
+
+        .btn-red {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        .btn-red:hover {
+            background: #e0404f;
+        }
+
+        .btn-blue {
+            background: #1e90ff;
+            color: #fff;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-blue:hover {
+            background: #1580e0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        th {
+            color: #ffd200;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+
+        .sold {
+            color: #2ed573;
+        }
+
+        .available {
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <h1>🎙️ Auctioneer Panel</h1>
+        <a href="/" class="back">← Back to Home</a>
+    </div>
+
+    {% if auction and auction_player %}
+    <div class="card live">
+        <h2>🔴 Live Auction</h2>
+        <div class="live-info">
+            <div><span>Player: </span><strong>{{auction_player.name}}</strong></div>
+            <div><span>Role: </span><strong>{{auction_player.role}}</strong></div>
+            <div><span>Base Price: </span><strong>{{auction_player.base_price}}</strong></div>
+            <div><span>Current Bid: </span><strong>{{auction.current_price}}</strong></div>
+            <div><span>Highest Bidder: </span><strong>{{auction.highest_bidder or "No bids yet"}}</strong></div>
+        </div>
+        <div class="btn-group">
+            <form method="post" action="/close"><button type="submit" class="btn-green">✅ Sell to Highest
+                    Bidder</button></form>
+            <form method="post" action="/unsold"><button type="submit" class="btn-red">❌ Mark Unsold</button></form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <h2>Unsold Players — Start Auction</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Country</th>
+                <th>Base Price</th>
+                <th>Action</th>
+            </tr>
+            {% for p in players %}
+            {% if p.sold == 0 %}
+            <tr>
+                <td>{{p.name}}</td>
+                <td>{{p.role}}</td>
+                <td>{{p.country}}</td>
+                <td>{{p.base_price}}</td>
+                <td>
+                    {% if not auction %}
+                    <a href="/start/{{p.id}}" class="btn btn-blue">Start Auction</a>
+                    {% else %}
+                    <span style="color:#555;">Auction in progress</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Teams & Budgets</h2>
+        <table>
+            <tr>
+                <th>Team</th>
+                <th>Remaining Budget</th>
+            </tr>
+            {% for t in teams %}
+            <tr>
+                <td>{{t.name}}</td>
+                <td>{{t.budget}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>All Players</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Sold Price</th>
+                <th>Team</th>
+            </tr>
+            {% for p in players %}
+            <tr>
+                <td>{{p.name}}</td>
+                <td>{{p.role}}</td>
+                {% if p.sold == 1 %}
+                <td class="sold">SOLD</td>
+                <td>{{p.sold_price}}</td>
+                <td>{{p.sold_team}}</td>
+                {% else %}
+                <td class="available">Available</td>
+                <td>—</td>
+                <td>—</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+</body>
+
+</html>
