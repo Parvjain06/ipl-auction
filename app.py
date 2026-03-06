@@ -126,27 +126,40 @@ def fix_null_sold():
         conn.commit()
 
 
-_initialized = False
+import threading
 
-@app.before_request
-def initialize():
+_initialized = False
+_init_lock = threading.Lock()
+
+def run_initialization():
     global _initialized
-    if _initialized:
-        return
-    _initialized = True
     try:
         create_tables()
-        print("✅ Tables created")
+        print("✅ Tables created", flush=True)
         seed_teams()
-        print("✅ Teams seeded")
+        print("✅ Teams seeded", flush=True)
         fix_null_sold()
-        print("✅ Fixed null sold values")
+        print("✅ Fixed null sold values", flush=True)
         randomize_base_prices()
-        print("✅ Base prices randomized")
+        print("✅ Base prices randomized", flush=True)
+        _initialized = True
+        print("✅ Initialization complete!", flush=True)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"❌ Startup error: {e}")
+        print(f"❌ Startup error: {e}", flush=True)
+        _initialized = True  # Mark done even on error so requests don't hang
+
+# Start initialization in background thread
+init_thread = threading.Thread(target=run_initialization, daemon=True)
+init_thread.start()
+
+
+@app.before_request
+def wait_for_init():
+    """Wait for background init to complete before serving requests."""
+    if not _initialized:
+        init_thread.join(timeout=60)
 
 
 # --------------------------
