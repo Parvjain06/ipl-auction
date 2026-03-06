@@ -69,9 +69,26 @@ def load_players():
                 for _, row in df.iterrows():
 
                     conn.execute(text("""
-                    INSERT INTO players(name,country,role,matches,runs,wickets,base_price)
-                    VALUES(:name,:country,:role,:matches,:runs,:wickets,:base_price)
-                    """), row.to_dict())
+                    CREATE TABLE IF NOT EXISTS players(
+                    id INTEGER PRIMARY KEY,
+                    name TEXT,
+                    country TEXT,
+                    role TEXT,
+                    matches INTEGER,
+                    runs INTEGER,
+                    wickets INTEGER,
+                    base_price INTEGER
+                    )
+                    """))
+
+                    conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS auction(
+                    id INTEGER PRIMARY KEY,
+                    player_id INTEGER,
+                    current_price INTEGER,
+                    status TEXT
+                    )
+                    """))
 
                 conn.commit()
 
@@ -225,7 +242,7 @@ def upload():
 
         df = pd.read_excel(file)
 
-        df.to_sql("players", engine, if_exists="replace", index=False)
+        df.to_sql("players", engine, if_exists="append", index=False)
 
         return "Dataset uploaded successfully"
 
@@ -236,4 +253,5 @@ def upload():
 # RUN APP
 # -----------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
