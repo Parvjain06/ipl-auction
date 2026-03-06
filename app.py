@@ -61,6 +61,7 @@ def create_tables():
             )
             """))
         else:
+            # Players table — keep existing data
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS players(
             id SERIAL PRIMARY KEY,
@@ -77,16 +78,19 @@ def create_tables():
             )
             """))
 
+            # Drop and recreate teams & auction to fix schema
+            conn.execute(text("DROP TABLE IF EXISTS teams"))
             conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS teams(
+            CREATE TABLE teams(
             id SERIAL PRIMARY KEY,
             name TEXT,
             budget INTEGER
             )
             """))
 
+            conn.execute(text("DROP TABLE IF EXISTS auction"))
             conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS auction(
+            CREATE TABLE auction(
             id SERIAL PRIMARY KEY,
             player_id INTEGER,
             current_price INTEGER,
