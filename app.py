@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect
-import pandas as pd
 from sqlalchemy import create_engine, text
 import os
 import random
+import threading
 
 app = Flask(__name__)
 
@@ -20,6 +20,18 @@ is_sqlite = DATABASE_URL.startswith("sqlite")
 DEFAULT_TEAMS = ["MI", "CSK", "RCB", "KKR", "SRH"]
 TEAM_BUDGET = 1000
 
+STAT_COLS = [
+    ("sold", "INTEGER DEFAULT 0"),
+    ("sold_price", "INTEGER"),
+    ("sold_team", "TEXT"),
+    ("batting_avg", "REAL"),
+    ("strike_rate", "REAL"),
+    ("economy", "REAL"),
+    ("centuries", "INTEGER"),
+    ("fifties", "INTEGER"),
+    ("catches", "INTEGER"),
+]
+
 
 # --------------------------
 # CREATE TABLES & SEED DATA
@@ -34,17 +46,16 @@ def create_tables():
             name TEXT, country TEXT, role TEXT,
             matches INTEGER, runs INTEGER, wickets INTEGER,
             base_price INTEGER,
-            sold INTEGER DEFAULT 0,
-            sold_price INTEGER,
-            sold_team TEXT
+            sold INTEGER DEFAULT 0, sold_price INTEGER, sold_team TEXT,
+            batting_avg REAL, strike_rate REAL, economy REAL,
+            centuries INTEGER, fifties INTEGER, catches INTEGER
             )
             """))
-            # Add missing columns to existing table (SQLite has no IF NOT EXISTS for columns)
-            for col, coltype in [("sold", "INTEGER DEFAULT 0"), ("sold_price", "INTEGER"), ("sold_team", "TEXT")]:
+            for col, coltype in STAT_COLS:
                 try:
                     conn.execute(text(f"ALTER TABLE players ADD COLUMN {col} {coltype}"))
                 except Exception:
-                    pass  # column already exists
+                    pass
             conn.execute(text("""
             CREATE TABLE IF NOT EXISTS teams(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,15 +76,14 @@ def create_tables():
             name TEXT, country TEXT, role TEXT,
             matches INTEGER, runs INTEGER, wickets INTEGER,
             base_price INTEGER,
-            sold INTEGER DEFAULT 0,
-            sold_price INTEGER,
-            sold_team TEXT
+            sold INTEGER DEFAULT 0, sold_price INTEGER, sold_team TEXT,
+            batting_avg REAL, strike_rate REAL, economy REAL,
+            centuries INTEGER, fifties INTEGER, catches INTEGER
             )
             """))
-            # Add missing columns to existing table
-            conn.execute(text("ALTER TABLE players ADD COLUMN IF NOT EXISTS sold INTEGER DEFAULT 0"))
-            conn.execute(text("ALTER TABLE players ADD COLUMN IF NOT EXISTS sold_price INTEGER"))
-            conn.execute(text("ALTER TABLE players ADD COLUMN IF NOT EXISTS sold_team TEXT"))
+            for col, coltype in STAT_COLS:
+                pg_type = coltype.replace("REAL", "DOUBLE PRECISION")
+                conn.execute(text(f"ALTER TABLE players ADD COLUMN IF NOT EXISTS {col} {pg_type}"))
 
             conn.execute(text("DROP TABLE IF EXISTS teams"))
             conn.execute(text("""
@@ -107,29 +117,63 @@ def seed_teams():
         conn.commit()
 
 
-def randomize_base_prices():
+def generate_player_stats():
+    """Generate realistic random stats and base prices for all players."""
     with engine.connect() as conn:
-        players = conn.execute(text("SELECT id FROM players")).fetchall()
+        players = conn.execute(text("SELECT id, role, matches, runs, wickets FROM players")).fetchall()
         for p in players:
-            price = random.choice(range(10, 110, 10))  # 10,20,...,100
-            conn.execute(
-                text("UPDATE players SET base_price=:bp WHERE id=:id"),
-                {"bp": price, "id": p.id},
-            )
+            role = p.role or "Batsman"
+            matches = p.matches or 50
+            runs = p.runs or 0
+            wickets = p.wickets or 0
+
+            # Calculate batting average
+            innings = max(1, int(matches * 0.9))
+            batting_avg = round(runs / innings, 2) if runs > 0 else round(random.uniform(5, 15), 2)
+
+            # Strike rate based on role
+            if role == "Bowler":
+                strike_rate = round(random.uniform(90, 120), 2)
+                economy = round(random.uniform(5.5, 8.5), 2)
+            elif role == "Allrounder":
+                strike_rate = round(random.uniform(120, 155), 2)
+                economy = round(random.uniform(6.5, 9.0), 2)
+            else:  # Batsman
+                strike_rate = round(random.uniform(125, 170), 2)
+                economy = 0.0
+
+            # Centuries & fifties based on runs
+            if runs > 5000:
+                centuries = random.randint(5, 15)
+                fifties = random.randint(20, 50)
+            elif runs > 2000:
+                centuries = random.randint(2, 8)
+                fifties = random.randint(10, 25)
+            elif runs > 500:
+                centuries = random.randint(0, 3)
+                fifties = random.randint(2, 10)
+            else:
+                centuries = 0
+                fifties = random.randint(0, 3)
+
+            catches = random.randint(10, max(15, matches // 3))
+            base_price = random.choice(range(10, 110, 10))
+
+            conn.execute(text("""
+            UPDATE players SET
+                base_price=:bp, batting_avg=:ba, strike_rate=:sr,
+                economy=:ec, centuries=:c, fifties=:f, catches=:ca,
+                sold = COALESCE(sold, 0)
+            WHERE id=:id
+            """), {
+                "bp": base_price, "ba": batting_avg, "sr": strike_rate,
+                "ec": economy, "c": centuries, "f": fifties, "ca": catches,
+                "id": p.id
+            })
         conn.commit()
 
-
-def fix_null_sold():
-    """Fix players that have NULL sold values (from old imports)."""
-    with engine.connect() as conn:
-        conn.execute(text("UPDATE players SET sold = 0 WHERE sold IS NULL"))
-        conn.commit()
-
-
-import threading
 
 _initialized = False
-_init_lock = threading.Lock()
 
 def run_initialization():
     global _initialized
@@ -138,26 +182,22 @@ def run_initialization():
         print("✅ Tables created", flush=True)
         seed_teams()
         print("✅ Teams seeded", flush=True)
-        fix_null_sold()
-        print("✅ Fixed null sold values", flush=True)
-        randomize_base_prices()
-        print("✅ Base prices randomized", flush=True)
+        generate_player_stats()
+        print("✅ Player stats generated", flush=True)
         _initialized = True
         print("✅ Initialization complete!", flush=True)
     except Exception as e:
         import traceback
         traceback.print_exc()
         print(f"❌ Startup error: {e}", flush=True)
-        _initialized = True  # Mark done even on error so requests don't hang
+        _initialized = True
 
-# Start initialization in background thread
 init_thread = threading.Thread(target=run_initialization, daemon=True)
 init_thread.start()
 
 
 @app.before_request
 def wait_for_init():
-    """Wait for background init to complete before serving requests."""
     if not _initialized:
         init_thread.join(timeout=60)
 

@@ -76,23 +76,33 @@
             color: #ff4757;
         }
 
-        .live-info {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
             margin-bottom: 16px;
         }
 
-        .live-info div {
-            font-size: 0.95rem;
+        .stat-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
         }
 
-        .live-info strong {
-            color: #fff;
-        }
-
-        .live-info span {
+        .stat-box .label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             color: #aaa;
+            margin-bottom: 3px;
+        }
+
+        .stat-box .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
         }
 
         .bid-form {
@@ -157,14 +167,18 @@
 
         th {
             color: #ffd200;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         td {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #ddd;
+        }
+
+        .scroll-table {
+            overflow-x: auto;
         }
     </style>
 </head>
@@ -183,15 +197,65 @@
 
     {% if auction and auction_player %}
     <div class="card live">
-        <h2>🔴 Live Auction</h2>
-        <div class="live-info">
-            <div><span>Player: </span><strong>{{ auction_player.name }}</strong></div>
-            <div><span>Role: </span><strong>{{ auction_player.role }}</strong></div>
-            <div><span>Country: </span><strong>{{ auction_player.country }}</strong></div>
-            <div><span>Base Price: </span><strong>{{ auction_player.base_price }}</strong></div>
-            <div><span>Current Bid: </span><strong>{{ auction.current_price }}</strong></div>
-            <div><span>Highest Bidder: </span><strong>{{ auction.highest_bidder if auction.highest_bidder else "No bids
-                    yet" }}</strong></div>
+        <h2>🔴 Live Auction — {{ auction_player.name }}</h2>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="label">Role</div>
+                <div class="value">{{ auction_player.role }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Country</div>
+                <div class="value">{{ auction_player.country }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Matches</div>
+                <div class="value">{{ auction_player.matches }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Runs</div>
+                <div class="value">{{ auction_player.runs }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Wickets</div>
+                <div class="value">{{ auction_player.wickets }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Bat Avg</div>
+                <div class="value">{{ auction_player.batting_avg or '-' }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Strike Rate</div>
+                <div class="value">{{ auction_player.strike_rate or '-' }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Economy</div>
+                <div class="value">{{ auction_player.economy or '-' }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">100s</div>
+                <div class="value">{{ auction_player.centuries if auction_player.centuries is not none else '-' }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">50s</div>
+                <div class="value">{{ auction_player.fifties if auction_player.fifties is not none else '-' }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Catches</div>
+                <div class="value">{{ auction_player.catches if auction_player.catches is not none else '-' }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Base Price</div>
+                <div class="value">{{ auction_player.base_price }}</div>
+            </div>
+            <div class="stat-box" style="border-color:#ff4757;">
+                <div class="label">Current Bid</div>
+                <div class="value" style="color:#ff4757;">{{ auction.current_price }}</div>
+            </div>
+            <div class="stat-box" style="border-color:#2ed573;">
+                <div class="label">Highest Bidder</div>
+                <div class="value" style="color:#2ed573;">{{ auction.highest_bidder if auction.highest_bidder else
+                    "None" }}</div>
+            </div>
         </div>
         <form method="post" action="/bid" class="bid-form">
             <input type="hidden" name="team" value="{{ team.name }}">
@@ -208,22 +272,38 @@
     {% if my_players %}
     <div class="card">
         <h2>Your Squad</h2>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Country</th>
-                <th>Bought For</th>
-            </tr>
-            {% for p in my_players %}
-            <tr>
-                <td>{{ p.name }}</td>
-                <td>{{ p.role }}</td>
-                <td>{{ p.country }}</td>
-                <td>{{ p.sold_price }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+        <div class="scroll-table">
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Country</th>
+                    <th>Matches</th>
+                    <th>Runs</th>
+                    <th>Wkts</th>
+                    <th>Avg</th>
+                    <th>SR</th>
+                    <th>100s</th>
+                    <th>50s</th>
+                    <th>Bought For</th>
+                </tr>
+                {% for p in my_players %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.role }}</td>
+                    <td>{{ p.country }}</td>
+                    <td>{{ p.matches }}</td>
+                    <td>{{ p.runs }}</td>
+                    <td>{{ p.wickets }}</td>
+                    <td>{{ p.batting_avg or '-' }}</td>
+                    <td>{{ p.strike_rate or '-' }}</td>
+                    <td>{{ p.centuries if p.centuries is not none else '-' }}</td>
+                    <td>{{ p.fifties if p.fifties is not none else '-' }}</td>
+                    <td style="color:#2ed573;">{{ p.sold_price }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
     </div>
     {% endif %}
 
