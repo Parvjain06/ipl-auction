@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — IPL Auction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,147 +15,246 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            background: #050510;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+        }
+
+        .bg .orb:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            top: -15%;
+            right: -5%;
+            animation: drift 12s ease-in-out infinite;
+        }
+
+        .bg .orb:nth-child(2) {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            bottom: -10%;
+            left: -5%;
+            animation: drift 15s ease-in-out infinite reverse;
+        }
+
+        @keyframes drift {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(30px, -20px);
+            }
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            padding: 20px;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 40px;
-            width: 420px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 440px;
+            animation: slideUp 0.6s ease-out;
         }
 
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-            color: #ffd200;
-        }
+        @keyframes slideUp {
+            0% {
+                transform: translateY(30px);
+                opacity: 0;
+            }
 
-        .subtitle {
-            color: #aaa;
-            margin-bottom: 24px;
-            font-size: 0.9rem;
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .back {
-            display: block;
-            margin-bottom: 20px;
-            color: #aaa;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.4);
             font-size: 0.85rem;
             text-decoration: none;
+            margin-bottom: 28px;
+            transition: color .2s;
         }
 
         .back:hover {
             color: #fff;
         }
 
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .sub {
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+
         .error {
-            background: rgba(255, 71, 87, 0.15);
-            color: #ff4757;
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             font-size: 0.9rem;
         }
 
-        label {
-            display: block;
-            font-size: 0.85rem;
-            color: #aaa;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
         .field {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
-        input {
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .field input {
             width: 100%;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.06);
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
             color: #fff;
             font-size: 1rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all .3s;
         }
 
-        input::placeholder {
-            color: #666;
+        .field input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .hint {
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.25);
+            margin-top: 6px;
+            line-height: 1.4;
         }
 
         button[type="submit"] {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #f7971e, #ffd200);
-            color: #000;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
             font-size: 1.05rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all .2s;
+            font-family: 'Outfit', sans-serif;
+            transition: all .3s;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+            margin-top: 8px;
         }
 
         button[type="submit"]:hover {
-            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
         }
 
-        .signup-link {
+        .alt {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 24px;
             font-size: 0.9rem;
-            color: #aaa;
+            color: rgba(255, 255, 255, 0.35);
         }
 
-        .signup-link a {
-            color: #ffd200;
+        .alt a {
+            color: #fbbf24;
             text-decoration: none;
+            font-weight: 600;
+            transition: color .2s;
         }
 
-        .hint {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 4px;
+        .alt a:hover {
+            color: #f59e0b;
         }
     </style>
 </head>
 
 <body>
-    <div class="card">
-        <a href="/" class="back">← Back to Home</a>
-        <h1>Login</h1>
-        <p class="subtitle">Enter your credentials to continue</p>
+    <div class="bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+    <div class="wrapper">
+        <div class="card">
+            <a href="/" class="back">← Back to Home</a>
+            <h1>Welcome back</h1>
+            <p class="sub">Sign in to your auction account</p>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
 
-        <form method="post" action="/login">
+            <form method="post" action="/login">
+                <div class="field">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="e.g. auctioneer, MI, CSK..." required
+                        autocomplete="off">
+                    <p class="hint">Auctioneer → "auctioneer" · Teams → team name (MI, CSK, RCB, KKR, SRH)</p>
+                </div>
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit">Sign In</button>
+            </form>
 
-            <div class="field">
-                <label>Username</label>
-                <input type="text" name="username" placeholder="e.g. auctioneer, MI, CSK..." required>
-                <p class="hint">Auctioneer enters "auctioneer" · Teams enter team name (MI, CSK, etc.)</p>
-            </div>
-
-            <div class="field">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Your password" required>
-            </div>
-
-            <button type="submit">Login</button>
-        </form>
-
-        <p class="signup-link">New here? <a href="/signup">Sign up</a></p>
+            <p class="alt">Don't have an account? <a href="/signup">Sign up</a></p>
+        </div>
     </div>
 </body>
 

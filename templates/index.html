@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>IPL Auction</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL Auction — Live Cricket Auction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,101 +15,307 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Outfit', sans-serif;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: #050510;
             color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        .bg .orb:nth-child(1) {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            top: -10%;
+            left: -5%;
+            animation-delay: 0s;
+        }
+
+        .bg .orb:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            bottom: -10%;
+            right: -5%;
+            animation-delay: -5s;
+        }
+
+        .bg .orb:nth-child(3) {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0) scale(1);
+            }
+
+            33% {
+                transform: translateY(-30px) translateX(20px) scale(1.05);
+            }
+
+            66% {
+                transform: translateY(20px) translateX(-20px) scale(0.95);
+            }
         }
 
         .container {
-            text-align: center;
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
         }
 
-        h1 {
-            font-size: 3rem;
+        /* Logo area */
+        .logo {
+            font-size: 5rem;
             margin-bottom: 10px;
-            background: linear-gradient(90deg, #f7971e, #ffd200);
-            -webkit-background-clip: text;
+            animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #ef4444);
             background-clip: text;
+            -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            animation: fadeUp 0.8s ease-out 0.2s both;
         }
 
         .subtitle {
-            font-size: 1.1rem;
-            color: #aaa;
-            margin-bottom: 50px;
+            font-size: 1.15rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: fadeUp 0.8s ease-out 0.4s both;
+        }
+
+        @keyframes fadeUp {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Glass card */
+        .glass {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 48px;
+            margin-top: 50px;
+            animation: fadeUp 0.8s ease-out 0.6s both;
+            width: 100%;
+            max-width: 500px;
         }
 
         .actions {
             display: flex;
-            gap: 20px;
-            justify-content: center;
+            gap: 16px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .btn {
-            display: inline-block;
-            padding: 14px 40px;
-            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 40px;
+            border-radius: 14px;
             text-decoration: none;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
-            transition: all .3s;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
             border: none;
             cursor: pointer;
+            letter-spacing: 0.5px;
+            width: 100%;
         }
 
-        .btn-login {
-            background: linear-gradient(135deg, #f7971e, #ffd200);
-            color: #000;
-        }
-
-        .btn-signup {
-            background: rgba(255, 255, 255, 0.08);
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
             color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 25px rgba(245, 158, 11, 0.3);
         }
 
-        .btn:hover {
+        .btn-primary:hover {
             transform: translateY(-3px);
-            opacity: 0.9;
+            box-shadow: 0 8px 35px rgba(245, 158, 11, 0.45);
         }
 
-        .logged-in {
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .logged-info {
+            text-align: center;
             margin-top: 20px;
-            font-size: 0.95rem;
-            color: #aaa;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
         }
 
-        .logged-in a {
-            color: #ffd200;
+        .logged-info a {
+            color: #fbbf24;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color .2s;
+        }
+
+        .logged-info a:hover {
+            color: #f59e0b;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 16px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .feature .icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        .feature .label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        @media(max-width:600px) {
+            .title {
+                font-size: 2.4rem;
+            }
+
+            .glass {
+                padding: 32px 24px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>🏏 IPL Auction</h1>
-        <p class="subtitle">The ultimate cricket auction experience</p>
+    <div class="bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
 
-        {% if session.get('user') %}
-        <div class="actions">
-            {% if session.get('role') == 'auctioneer' %}
-            <a href="/auctioneer" class="btn btn-login">Enter Auctioneer Panel</a>
+    <div class="container">
+        <div class="logo">🏏</div>
+        <h1 class="title">IPL Auction</h1>
+        <p class="subtitle">The Ultimate Cricket Auction Experience</p>
+
+        <div class="glass">
+            {% if session.get('user') %}
+            <div class="actions">
+                {% if session.get('role') == 'auctioneer' %}
+                <a href="/auctioneer" class="btn btn-primary">🎙️ Enter Auctioneer Panel</a>
+                {% else %}
+                <a href="/team/{{ session.get('user') }}" class="btn btn-primary">🏆 Enter {{ session.get('user') }}
+                    Dashboard</a>
+                {% endif %}
+            </div>
+            <p class="logged-info">Signed in as <strong>{{ session.get('user') }}</strong> · <a href="/logout">Sign
+                    out</a></p>
             {% else %}
-            <a href="/team/{{ session.get('user') }}" class="btn btn-login">Enter {{ session.get('user') }} Panel</a>
+            <div class="actions">
+                <a href="/login" class="btn btn-primary">Login</a>
+                <a href="/signup" class="btn btn-secondary">Create Account</a>
+            </div>
+            <div class="features">
+                <div class="feature">
+                    <div class="icon">🎙️</div>
+                    <div class="label">Auctioneer</div>
+                </div>
+                <div class="feature">
+                    <div class="icon">💰</div>
+                    <div class="label">Live Bidding</div>
+                </div>
+                <div class="feature">
+                    <div class="icon">📊</div>
+                    <div class="label">Player Stats</div>
+                </div>
+            </div>
             {% endif %}
         </div>
-        <p class="logged-in">Logged in as <strong>{{ session.get('user') }}</strong> · <a href="/logout">Logout</a></p>
-        {% else %}
-        <div class="actions">
-            <a href="/login" class="btn btn-login">Login</a>
-            <a href="/signup" class="btn btn-signup">Sign Up</a>
-        </div>
-        {% endif %}
     </div>
 </body>
 

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ team.name }} — IPL Auction</title>
     <meta http-equiv="refresh" content="5">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,301 +16,627 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0f0c29;
+            font-family: 'Outfit', sans-serif;
+            background: #050510;
             color: #fff;
-            padding: 30px 40px;
+            min-height: 100vh;
         }
 
-        a {
-            color: #ffd200;
-            text-decoration: none;
+        .bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
         }
 
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 5px;
+        .bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.2;
         }
 
-        .top-bar {
+        .bg .orb:nth-child(1) {
+            width: 450px;
+            height: 450px;
+            background: #3b82f6;
+            top: -15%;
+            left: -10%;
+        }
+
+        .bg .orb:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            background: #8b5cf6;
+            bottom: -15%;
+            right: -10%;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            padding: 28px 36px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
-        .back {
-            font-size: 0.9rem;
-            color: #aaa;
+        .team-info h1 {
+            font-size: 1.8rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .back:hover {
-            color: #fff;
+        .team-info h1 span {
+            font-size: 1.5rem;
         }
 
-        .budget-badge {
-            background: rgba(46, 213, 115, 0.15);
-            color: #2ed573;
-            padding: 8px 18px;
-            border-radius: 20px;
-            font-weight: 600;
+        .topbar-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .budget-pill {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            padding: 10px 22px;
+            border-radius: 50px;
+            font-weight: 700;
             font-size: 0.95rem;
+            color: #86efac;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .card {
+        .budget-pill .icon {
+            font-size: 1.1rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.4);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all .2s;
+        }
+
+        .nav-link:hover {
+            color: #fff;
             background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 24px;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 28px;
             margin-bottom: 24px;
+            animation: fadeIn 0.5s ease-out;
         }
 
-        .card h2 {
-            font-size: 1.3rem;
-            margin-bottom: 16px;
-            color: #ffd200;
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .live {
-            border-color: #ff4757;
-            background: rgba(255, 71, 87, 0.08);
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .live h2 {
-            color: #ff4757;
+        /* Live auction */
+        .live-card {
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .live-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: rgba(239, 68, 68, 0.15);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #fca5a5;
+            margin-bottom: 14px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+        }
+
+        .player-header {
+            margin-bottom: 20px;
+        }
+
+        .player-name {
+            font-size: 1.7rem;
+            font-weight: 900;
+        }
+
+        .player-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tag-role {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+        }
+
+        .tag-country {
+            background: rgba(6, 182, 212, 0.15);
+            color: #67e8f9;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 10px;
-            margin-bottom: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 8px;
+            margin-bottom: 20px;
         }
 
-        .stat-box {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 10px;
+        .stat {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 12px 10px;
+            text-align: center;
+            transition: all .2s;
+        }
+
+        .stat:hover {
+            background: rgba(255, 255, 255, 0.07);
+            transform: translateY(-2px);
+        }
+
+        .stat .num {
+            font-size: 1.2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .stat .lbl {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        .bid-highlight {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .bid-box {
+            border-radius: 14px;
+            padding: 16px;
             text-align: center;
         }
 
-        .stat-box .label {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #aaa;
-            margin-bottom: 3px;
+        .bid-box.price {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
-        .stat-box .value {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fff;
+        .bid-box.bidder {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .bid-box .val {
+            font-size: 1.6rem;
+            font-weight: 900;
+        }
+
+        .bid-box.price .val {
+            color: #fca5a5;
+        }
+
+        .bid-box.bidder .val {
+            color: #86efac;
+        }
+
+        .bid-box .blbl {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 3px;
         }
 
         .bid-form {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 12px;
+            align-items: stretch;
             flex-wrap: wrap;
         }
 
         .bid-form input[type="number"] {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.08);
+            flex: 1;
+            min-width: 160px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
             color: #fff;
-            font-size: 1rem;
-            width: 160px;
-        }
-
-        .bid-form input[type="number"]::placeholder {
-            color: #888;
-        }
-
-        button {
-            padding: 10px 22px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 1.1rem;
+            font-family: 'Outfit', sans-serif;
             font-weight: 600;
-            transition: all .2s;
+            transition: all .3s;
+        }
+
+        .bid-form input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: 400;
+        }
+
+        .bid-form input:focus {
+            outline: none;
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .btn-bid {
-            background: linear-gradient(135deg, #f7971e, #ffd200);
-            color: #000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: all .3s;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+            white-space: nowrap;
         }
 
         .btn-bid:hover {
-            opacity: 0.85;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
         }
 
-        .no-auction {
+        /* Waiting state */
+        .waiting {
             text-align: center;
-            padding: 40px;
-            color: #aaa;
-            font-size: 1.1rem;
+            padding: 50px 20px;
+        }
+
+        .waiting .emoji {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .waiting .msg {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.05rem;
+        }
+
+        .waiting .hint {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        /* Squad table */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th,
-        td {
-            padding: 10px 14px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         th {
-            color: #ffd200;
-            font-size: 0.75rem;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.68rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         td {
-            font-size: 0.85rem;
-            color: #ddd;
+            padding: 12px 16px;
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        .scroll-table {
-            overflow-x: auto;
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: #fff;
+        }
+
+        .cost {
+            color: #86efac;
+            font-weight: 700;
+        }
+
+        .empty-squad {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 0.95rem;
+        }
+
+        @media(max-width:768px) {
+            .page {
+                padding: 20px 16px;
+            }
+
+            .bid-highlight {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .bid-form {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 
 <body>
-
-    <div class="top-bar">
-        <div>
-            <h1>{{ team.name }}</h1>
-        </div>
-        <div style="display:flex;gap:15px;align-items:center;">
-            <div class="budget-badge">Budget: {{ team.budget }}</div>
-            <a href="/logout" class="back">Logout</a>
-        </div>
+    <div class="bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
     </div>
 
-    {% if auction and auction_player %}
-    <div class="card live">
-        <h2>🔴 Live Auction — {{ auction_player.name }}</h2>
-        <div class="stats-grid">
-            <div class="stat-box">
-                <div class="label">Role</div>
-                <div class="value">{{ auction_player.role }}</div>
+    <div class="page">
+
+        <div class="topbar">
+            <div class="team-info">
+                <h1><span>🏆</span> {{ team.name }}</h1>
             </div>
-            <div class="stat-box">
-                <div class="label">Country</div>
-                <div class="value">{{ auction_player.country }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Matches</div>
-                <div class="value">{{ auction_player.matches }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Runs</div>
-                <div class="value">{{ auction_player.runs }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Wickets</div>
-                <div class="value">{{ auction_player.wickets }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Bat Avg</div>
-                <div class="value">{{ auction_player.batting_avg or '-' }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Strike Rate</div>
-                <div class="value">{{ auction_player.strike_rate or '-' }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Economy</div>
-                <div class="value">{{ auction_player.economy or '-' }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">100s</div>
-                <div class="value">{{ auction_player.centuries if auction_player.centuries is not none else '-' }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">50s</div>
-                <div class="value">{{ auction_player.fifties if auction_player.fifties is not none else '-' }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Catches</div>
-                <div class="value">{{ auction_player.catches if auction_player.catches is not none else '-' }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">Base Price</div>
-                <div class="value">{{ auction_player.base_price }}</div>
-            </div>
-            <div class="stat-box" style="border-color:#ff4757;">
-                <div class="label">Current Bid</div>
-                <div class="value" style="color:#ff4757;">{{ auction.current_price }}</div>
-            </div>
-            <div class="stat-box" style="border-color:#2ed573;">
-                <div class="label">Highest Bidder</div>
-                <div class="value" style="color:#2ed573;">{{ auction.highest_bidder if auction.highest_bidder else
-                    "None" }}</div>
+            <div class="topbar-right">
+                <div class="budget-pill"><span class="icon">💰</span> ₹{{ team.budget }}</div>
+                <a href="/logout" class="nav-link">Sign out</a>
             </div>
         </div>
-        <form method="post" action="/bid" class="bid-form">
-            <input type="hidden" name="team" value="{{ team.name }}">
-            <input type="number" name="bid" placeholder="Enter bid amount" required>
-            <button type="submit" class="btn-bid">💰 Place Bid</button>
-        </form>
-    </div>
-    {% else %}
-    <div class="card">
-        <div class="no-auction">No active auction right now. Wait for the auctioneer to start one.</div>
-    </div>
-    {% endif %}
 
-    {% if my_players %}
-    <div class="card">
-        <h2>Your Squad</h2>
-        <div class="scroll-table">
-            <table>
-                <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Country</th>
-                    <th>Matches</th>
-                    <th>Runs</th>
-                    <th>Wkts</th>
-                    <th>Avg</th>
-                    <th>SR</th>
-                    <th>100s</th>
-                    <th>50s</th>
-                    <th>Bought For</th>
-                </tr>
-                {% for p in my_players %}
-                <tr>
-                    <td>{{ p.name }}</td>
-                    <td>{{ p.role }}</td>
-                    <td>{{ p.country }}</td>
-                    <td>{{ p.matches }}</td>
-                    <td>{{ p.runs }}</td>
-                    <td>{{ p.wickets }}</td>
-                    <td>{{ p.batting_avg or '-' }}</td>
-                    <td>{{ p.strike_rate or '-' }}</td>
-                    <td>{{ p.centuries if p.centuries is not none else '-' }}</td>
-                    <td>{{ p.fifties if p.fifties is not none else '-' }}</td>
-                    <td style="color:#2ed573;">{{ p.sold_price }}</td>
-                </tr>
-                {% endfor %}
-            </table>
+        <!-- LIVE AUCTION -->
+        {% if auction and auction_player %}
+        <div class="card live-card">
+            <div class="live-badge">
+                <div class="live-dot"></div>LIVE AUCTION
+            </div>
+            <div class="player-header">
+                <div class="player-name">{{ auction_player.name }}</div>
+                <div class="player-meta">
+                    <span class="tag tag-role">{{ auction_player.role }}</span>
+                    <span class="tag tag-country">{{ auction_player.country }}</span>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat">
+                    <div class="num">{{ auction_player.matches }}</div>
+                    <div class="lbl">Matches</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.runs }}</div>
+                    <div class="lbl">Runs</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.wickets }}</div>
+                    <div class="lbl">Wickets</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.batting_avg or '-' }}</div>
+                    <div class="lbl">Bat Avg</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.strike_rate or '-' }}</div>
+                    <div class="lbl">Strike Rate</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.economy or '-' }}</div>
+                    <div class="lbl">Economy</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.centuries if auction_player.centuries is not none else '-' }}
+                    </div>
+                    <div class="lbl">100s</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.fifties if auction_player.fifties is not none else '-' }}</div>
+                    <div class="lbl">50s</div>
+                </div>
+                <div class="stat">
+                    <div class="num">{{ auction_player.catches if auction_player.catches is not none else '-' }}</div>
+                    <div class="lbl">Catches</div>
+                </div>
+            </div>
+            <div class="bid-highlight">
+                <div class="bid-box price">
+                    <div class="val">₹{{ auction.current_price }}</div>
+                    <div class="blbl">Current Bid</div>
+                </div>
+                <div class="bid-box bidder">
+                    <div class="val">{{ auction.highest_bidder if auction.highest_bidder else "—" }}</div>
+                    <div class="blbl">Highest Bidder</div>
+                </div>
+            </div>
+            <form method="post" action="/bid" class="bid-form">
+                <input type="hidden" name="team" value="{{ team.name }}">
+                <input type="number" name="bid" placeholder="Enter your bid amount..." required min="1">
+                <button type="submit" class="btn-bid">💰 Place Bid</button>
+            </form>
         </div>
-    </div>
-    {% endif %}
+        {% else %}
+        <div class="card">
+            <div class="waiting">
+                <div class="emoji">⏳</div>
+                <div class="msg">Waiting for the auctioneer to start an auction...</div>
+                <div class="hint">This page auto-refreshes every 5 seconds</div>
+            </div>
+        </div>
+        {% endif %}
 
+        <!-- YOUR SQUAD -->
+        <div class="card">
+            <div class="card-title">👥 Your Squad</div>
+            {% if my_players %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Role</th>
+                            <th>Country</th>
+                            <th>Mat</th>
+                            <th>Runs</th>
+                            <th>Wkts</th>
+                            <th>Avg</th>
+                            <th>SR</th>
+                            <th>100s</th>
+                            <th>50s</th>
+                            <th>Paid</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in my_players %}
+                        <tr>
+                            <td style="font-weight:600;color:#fff;">{{ p.name }}</td>
+                            <td>{{ p.role }}</td>
+                            <td>{{ p.country }}</td>
+                            <td>{{ p.matches }}</td>
+                            <td>{{ p.runs }}</td>
+                            <td>{{ p.wickets }}</td>
+                            <td>{{ p.batting_avg or '-' }}</td>
+                            <td>{{ p.strike_rate or '-' }}</td>
+                            <td>{{ p.centuries if p.centuries is not none else '-' }}</td>
+                            <td>{{ p.fifties if p.fifties is not none else '-' }}</td>
+                            <td class="cost">₹{{ p.sold_price }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-squad">No players in your squad yet. Win bids to build your team! 🏏</div>
+            {% endif %}
+        </div>
+
+    </div>
 </body>
 
 </html>

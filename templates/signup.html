@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up — IPL Auction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,182 +15,309 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            background: #050510;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+        }
+
+        .bg .orb:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            top: -15%;
+            left: -5%;
+            animation: drift 12s ease-in-out infinite;
+        }
+
+        .bg .orb:nth-child(2) {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            bottom: -10%;
+            right: -5%;
+            animation: drift 15s ease-in-out infinite reverse;
+        }
+
+        @keyframes drift {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(30px, -20px);
+            }
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            padding: 20px;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 40px;
-            width: 420px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 440px;
+            animation: slideUp 0.6s ease-out;
         }
 
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-            color: #ffd200;
-        }
+        @keyframes slideUp {
+            0% {
+                transform: translateY(30px);
+                opacity: 0;
+            }
 
-        .subtitle {
-            color: #aaa;
-            margin-bottom: 24px;
-            font-size: 0.9rem;
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .back {
-            display: block;
-            margin-bottom: 20px;
-            color: #aaa;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.4);
             font-size: 0.85rem;
             text-decoration: none;
+            margin-bottom: 28px;
+            transition: color .2s;
         }
 
         .back:hover {
             color: #fff;
         }
 
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .sub {
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+
         .error {
-            background: rgba(255, 71, 87, 0.15);
-            color: #ff4757;
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             font-size: 0.9rem;
         }
 
-        label {
-            display: block;
-            font-size: 0.85rem;
-            color: #aaa;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
         .field {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
-        input,
-        select {
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field select {
             width: 100%;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.06);
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
             color: #fff;
             font-size: 1rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all .3s;
         }
 
-        input::placeholder {
-            color: #666;
+        .field input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
         }
 
-        select option {
+        .field input:focus,
+        .field select:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .field select option {
             background: #1a1a2e;
             color: #fff;
         }
 
-        .role-select {
+        .role-picker {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
-        .role-btn {
+        .role-opt {
             flex: 1;
-            padding: 14px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.04);
-            color: #aaa;
+            padding: 18px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
             cursor: pointer;
             text-align: center;
+            transition: all .3s;
+        }
+
+        .role-opt:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .role-opt.active {
+            border-color: rgba(139, 92, 246, 0.6);
+            background: rgba(139, 92, 246, 0.08);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+        }
+
+        .role-opt .emoji {
+            font-size: 1.6rem;
+            margin-bottom: 4px;
+        }
+
+        .role-opt .rlabel {
+            font-size: 0.85rem;
             font-weight: 600;
-            font-size: 0.95rem;
-            transition: all .2s;
+            color: rgba(255, 255, 255, 0.6);
         }
 
-        .role-btn:hover {
-            border-color: #ffd200;
-            color: #fff;
+        .role-opt.active .rlabel {
+            color: #c4b5fd;
         }
 
-        .role-btn.active {
-            border-color: #ffd200;
-            color: #ffd200;
-            background: rgba(255, 210, 0, 0.08);
-        }
-
-        .team-select {
+        .team-field {
             display: none;
-            margin-bottom: 18px;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        .team-select.show {
+        .team-field.show {
             display: block;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         button[type="submit"] {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #f7971e, #ffd200);
-            color: #000;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
             font-size: 1.05rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all .2s;
+            font-family: 'Outfit', sans-serif;
+            transition: all .3s;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25);
+            margin-top: 8px;
         }
 
         button[type="submit"]:hover {
-            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
         }
 
-        .login-link {
+        .alt {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 24px;
             font-size: 0.9rem;
-            color: #aaa;
+            color: rgba(255, 255, 255, 0.35);
         }
 
-        .login-link a {
-            color: #ffd200;
+        .alt a {
+            color: #c4b5fd;
             text-decoration: none;
+            font-weight: 600;
+            transition: color .2s;
+        }
+
+        .alt a:hover {
+            color: #a78bfa;
         }
     </style>
 </head>
 
 <body>
-    <div class="card">
-        <a href="/" class="back">← Back to Home</a>
-        <h1>Sign Up</h1>
-        <p class="subtitle">Create your account to join the auction</p>
+    <div class="bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+    <div class="wrapper">
+        <div class="card">
+            <a href="/" class="back">← Back to Home</a>
+            <h1>Create Account</h1>
+            <p class="sub">Join the IPL Auction as auctioneer or team</p>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
 
-        <form method="post" action="/signup">
-
-            <label>Choose Role</label>
-            <div class="role-select">
-                <div class="role-btn active" onclick="selectRole('auctioneer', this)" id="btn-auctioneer">🎙️ Auctioneer
+            <form method="post" action="/signup">
+                <div class="field"><label>Choose Your Role</label></div>
+                <div class="role-picker">
+                    <div class="role-opt active" onclick="pickRole('auctioneer',this)" id="r-auc">
+                        <div class="emoji">🎙️</div>
+                        <div class="rlabel">Auctioneer</div>
+                    </div>
+                    <div class="role-opt" onclick="pickRole('team',this)" id="r-team">
+                        <div class="emoji">🏆</div>
+                        <div class="rlabel">Team</div>
+                    </div>
                 </div>
-                <div class="role-btn" onclick="selectRole('team', this)" id="btn-team">🏆 Team</div>
-            </div>
-            <input type="hidden" name="role" id="role-input" value="auctioneer">
+                <input type="hidden" name="role" id="role-val" value="auctioneer">
 
-            <div class="team-select" id="team-select">
-                <div class="field">
+                <div class="field team-field" id="team-field">
                     <label>Select Team</label>
                     <select name="team">
                         {% for t in teams %}
@@ -194,25 +325,25 @@
                         {% endfor %}
                     </select>
                 </div>
-            </div>
 
-            <div class="field">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Set a password" required>
-            </div>
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Set a password (min 3 chars)" required>
+                </div>
 
-            <button type="submit">Create Account</button>
-        </form>
+                <button type="submit">Create Account</button>
+            </form>
 
-        <p class="login-link">Already registered? <a href="/login">Login here</a></p>
+            <p class="alt">Already have an account? <a href="/login">Sign in</a></p>
+        </div>
     </div>
 
     <script>
-        function selectRole(role, el) {
-            document.getElementById('role-input').value = role;
-            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+        function pickRole(role, el) {
+            document.getElementById('role-val').value = role;
+            document.querySelectorAll('.role-opt').forEach(r => r.classList.remove('active'));
             el.classList.add('active');
-            document.getElementById('team-select').classList.toggle('show', role === 'team');
+            document.getElementById('team-field').classList.toggle('show', role === 'team');
         }
     </script>
 </body>
