@@ -126,19 +126,27 @@ def fix_null_sold():
         conn.commit()
 
 
-try:
-    create_tables()
-    print("✅ Tables created")
-    seed_teams()
-    print("✅ Teams seeded")
-    fix_null_sold()
-    print("✅ Fixed null sold values")
-    randomize_base_prices()
-    print("✅ Base prices randomized")
-except Exception as e:
-    import traceback
-    traceback.print_exc()
-    print(f"❌ Startup error: {e}")
+_initialized = False
+
+@app.before_request
+def initialize():
+    global _initialized
+    if _initialized:
+        return
+    _initialized = True
+    try:
+        create_tables()
+        print("✅ Tables created")
+        seed_teams()
+        print("✅ Teams seeded")
+        fix_null_sold()
+        print("✅ Fixed null sold values")
+        randomize_base_prices()
+        print("✅ Base prices randomized")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"❌ Startup error: {e}")
 
 
 # --------------------------
