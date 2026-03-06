@@ -95,9 +95,9 @@
 
     <div class="teams">
         {% for t in teams %}
-        <a href="/team/{{t.name}}" class="team-card">
-            <div class="name">{{t.name}}</div>
-            <div class="budget">Budget: <strong>{{t.budget}}</strong></div>
+        <a href="/team/{{ t.name }}" class="team-card">
+            <div class="name">{{ t.name }}</div>
+            <div class="budget">Budget: <strong>{{ t.budget }}</strong></div>
         </a>
         {% endfor %}
     </div>

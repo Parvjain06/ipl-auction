@@ -3,6 +3,7 @@
 
 <head>
     <title>Auctioneer — IPL Auction</title>
+    <meta http-equiv="refresh" content="5">
     <style>
         * {
             margin: 0;
@@ -57,7 +58,6 @@
             color: #ffd200;
         }
 
-        /* Live Auction */
         .live {
             border-color: #ff4757;
             background: rgba(255, 71, 87, 0.08);
@@ -178,11 +178,12 @@
     <div class="card live">
         <h2>🔴 Live Auction</h2>
         <div class="live-info">
-            <div><span>Player: </span><strong>{{auction_player.name}}</strong></div>
-            <div><span>Role: </span><strong>{{auction_player.role}}</strong></div>
-            <div><span>Base Price: </span><strong>{{auction_player.base_price}}</strong></div>
-            <div><span>Current Bid: </span><strong>{{auction.current_price}}</strong></div>
-            <div><span>Highest Bidder: </span><strong>{{auction.highest_bidder or "No bids yet"}}</strong></div>
+            <div><span>Player: </span><strong>{{ auction_player.name }}</strong></div>
+            <div><span>Role: </span><strong>{{ auction_player.role }}</strong></div>
+            <div><span>Base Price: </span><strong>{{ auction_player.base_price }}</strong></div>
+            <div><span>Current Bid: </span><strong>{{ auction.current_price }}</strong></div>
+            <div><span>Highest Bidder: </span><strong>{{ auction.highest_bidder if auction.highest_bidder else "No bids
+                    yet" }}</strong></div>
         </div>
         <div class="btn-group">
             <form method="post" action="/close"><button type="submit" class="btn-green">✅ Sell to Highest
@@ -203,15 +204,15 @@
                 <th>Action</th>
             </tr>
             {% for p in players %}
-            {% if p.sold == 0 %}
+            {% if p.sold != 1 %}
             <tr>
-                <td>{{p.name}}</td>
-                <td>{{p.role}}</td>
-                <td>{{p.country}}</td>
-                <td>{{p.base_price}}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.role }}</td>
+                <td>{{ p.country }}</td>
+                <td>{{ p.base_price }}</td>
                 <td>
                     {% if not auction %}
-                    <a href="/start/{{p.id}}" class="btn btn-blue">Start Auction</a>
+                    <a href="/start/{{ p.id }}" class="btn btn-blue">Start Auction</a>
                     {% else %}
                     <span style="color:#555;">Auction in progress</span>
                     {% endif %}
@@ -231,8 +232,8 @@
             </tr>
             {% for t in teams %}
             <tr>
-                <td>{{t.name}}</td>
-                <td>{{t.budget}}</td>
+                <td>{{ t.name }}</td>
+                <td>{{ t.budget }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -250,12 +251,12 @@
             </tr>
             {% for p in players %}
             <tr>
-                <td>{{p.name}}</td>
-                <td>{{p.role}}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.role }}</td>
                 {% if p.sold == 1 %}
                 <td class="sold">SOLD</td>
-                <td>{{p.sold_price}}</td>
-                <td>{{p.sold_team}}</td>
+                <td>{{ p.sold_price }}</td>
+                <td>{{ p.sold_team }}</td>
                 {% else %}
                 <td class="available">Available</td>
                 <td>—</td>

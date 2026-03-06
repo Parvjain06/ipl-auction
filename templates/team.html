@@ -2,7 +2,8 @@
 <html>
 
 <head>
-    <title>{{team.name}} — IPL Auction</title>
+    <title>{{ team.name }} — IPL Auction</title>
+    <meta http-equiv="refresh" content="5">
     <style>
         * {
             margin: 0;
@@ -101,7 +102,7 @@
             flex-wrap: wrap;
         }
 
-        .bid-form input {
+        .bid-form input[type="number"] {
             padding: 10px 16px;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -111,7 +112,7 @@
             width: 160px;
         }
 
-        .bid-form input::placeholder {
+        .bid-form input[type="number"]::placeholder {
             color: #888;
         }
 
@@ -172,10 +173,10 @@
 
     <div class="top-bar">
         <div>
-            <h1>{{team.name}}</h1>
+            <h1>{{ team.name }}</h1>
         </div>
         <div style="display:flex;gap:15px;align-items:center;">
-            <div class="budget-badge">Budget: {{team.budget}}</div>
+            <div class="budget-badge">Budget: {{ team.budget }}</div>
             <a href="/select_team" class="back">← Switch Team</a>
         </div>
     </div>
@@ -184,15 +185,16 @@
     <div class="card live">
         <h2>🔴 Live Auction</h2>
         <div class="live-info">
-            <div><span>Player: </span><strong>{{auction_player.name}}</strong></div>
-            <div><span>Role: </span><strong>{{auction_player.role}}</strong></div>
-            <div><span>Country: </span><strong>{{auction_player.country}}</strong></div>
-            <div><span>Base Price: </span><strong>{{auction_player.base_price}}</strong></div>
-            <div><span>Current Bid: </span><strong>{{auction.current_price}}</strong></div>
-            <div><span>Highest Bidder: </span><strong>{{auction.highest_bidder or "No bids yet"}}</strong></div>
+            <div><span>Player: </span><strong>{{ auction_player.name }}</strong></div>
+            <div><span>Role: </span><strong>{{ auction_player.role }}</strong></div>
+            <div><span>Country: </span><strong>{{ auction_player.country }}</strong></div>
+            <div><span>Base Price: </span><strong>{{ auction_player.base_price }}</strong></div>
+            <div><span>Current Bid: </span><strong>{{ auction.current_price }}</strong></div>
+            <div><span>Highest Bidder: </span><strong>{{ auction.highest_bidder if auction.highest_bidder else "No bids
+                    yet" }}</strong></div>
         </div>
         <form method="post" action="/bid" class="bid-form">
-            <input type="hidden" name="team" value="{{team.name}}">
+            <input type="hidden" name="team" value="{{ team.name }}">
             <input type="number" name="bid" placeholder="Enter bid amount" required>
             <button type="submit" class="btn-bid">💰 Place Bid</button>
         </form>
@@ -215,10 +217,10 @@
             </tr>
             {% for p in my_players %}
             <tr>
-                <td>{{p.name}}</td>
-                <td>{{p.role}}</td>
-                <td>{{p.country}}</td>
-                <td>{{p.sold_price}}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.role }}</td>
+                <td>{{ p.country }}</td>
+                <td>{{ p.sold_price }}</td>
             </tr>
             {% endfor %}
         </table>

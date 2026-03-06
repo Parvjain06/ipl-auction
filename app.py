@@ -108,14 +108,25 @@ def randomize_base_prices():
         conn.commit()
 
 
+def fix_null_sold():
+    """Fix players that have NULL sold values (from old imports)."""
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE players SET sold = 0 WHERE sold IS NULL"))
+        conn.commit()
+
+
 try:
     create_tables()
     print("✅ Tables created")
     seed_teams()
     print("✅ Teams seeded")
+    fix_null_sold()
+    print("✅ Fixed null sold values")
     randomize_base_prices()
     print("✅ Base prices randomized")
 except Exception as e:
+    import traceback
+    traceback.print_exc()
     print(f"❌ Startup error: {e}")
 
 
